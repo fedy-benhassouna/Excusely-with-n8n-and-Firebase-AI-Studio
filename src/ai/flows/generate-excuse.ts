@@ -30,7 +30,6 @@ export async function generateExcuse(input: GenerateExcuseInput): Promise<Genera
       headers: {
         'Content-Type': 'application/json',
       },
-      // Send context as per GenerateExcuseInputSchema, assuming API expects { context: "..." }
       body: JSON.stringify({ context: input.context }),
     });
 
@@ -43,36 +42,42 @@ export async function generateExcuse(input: GenerateExcuseInput): Promise<Genera
         }
       } catch (e) {
         console.error("Failed to read error response body:", e);
-        // Ignore if reading body fails, stick with status text and what was captured
       }
       throw new Error(`API request failed: ${response.status} ${response.statusText}. Details: ${errorBody}`);
     }
 
-    // Assuming the API returns a JSON object that matches GenerateExcuseOutputSchema, e.g., { "excuse": "..." }
-    const data: unknown = await response.json();
+    // The API returns a JSON object like { "Excuse": "..." }
+    // We need to transform it to match GenerateExcuseOutputSchema which expects { "excuse": "..." }
+    const apiResponseData: any = await response.json();
 
-    const parsedOutput = GenerateExcuseOutputSchema.safeParse(data);
+    const transformedData = {
+      excuse: apiResponseData?.Excuse // Access 'Excuse' (capital E) from API response
+    };
+
+    const parsedOutput = GenerateExcuseOutputSchema.safeParse(transformedData);
     if (parsedOutput.success) {
       return parsedOutput.data;
     } else {
-      console.error('API response did not match expected schema:', parsedOutput.error, 'Received data:', data);
-      // Example: If the API might return the excuse string directly (not as a JSON object field)
-      // and you wanted to handle it, you could add:
-      // if (typeof data === 'string') {
-      //   return { excuse: data };
-      // }
-      throw new Error(`API response format is invalid: ${parsedOutput.error.message}`);
+      console.error(
+        'Transformed API response did not match expected schema:', 
+        parsedOutput.error, 
+        'Original API data:', 
+        apiResponseData,
+        'Transformed data for parsing:',
+        transformedData
+      );
+      throw new Error(`API response format is invalid after transformation: ${parsedOutput.error.message}`);
     }
 
   } catch (error) {
-    console.error('Error calling excuse API:', error);
+    console.error('Error calling excuse API or processing response:', error);
     if (error instanceof Error) {
       // Avoid double-wrapping if it's already a custom API error message
       if (!error.message.startsWith('API request failed') && !error.message.startsWith('API response format is invalid')) {
-        throw new Error(`Failed to generate excuse via API: ${error.message}`);
+        throw new Error(`Failed to generate excuse: ${error.message}`);
       }
-      throw error; // Re-throw the specific error from fetch, response handling, or parsing
+      throw error; // Re-throw the specific error
     }
-    throw new Error('An unknown error occurred while generating excuse via API.');
+    throw new Error('An unknown error occurred while generating excuse.');
   }
 }
