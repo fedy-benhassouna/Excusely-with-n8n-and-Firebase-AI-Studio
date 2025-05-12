@@ -1,5 +1,5 @@
 
-# Excusely: The AI-Powered Excuse Generator 🤖🎭
+# Excusely: The AI-Powered Excuse Generator 
 
 **Excusely** is a whimsical AI application that crafts humorous and absurd excuses on demand. Built using [Firebase AI Studio](https://firebase.google.com/products/ai-studio) for the front-end and [n8n](https://n8n.io/) for backend automation, this project seamlessly integrates AI-driven workflows to deliver entertaining excuses for any situation.
 
@@ -36,26 +36,6 @@
 ![Excusely Demo](https://github.com/user-attachments/assets/123c65da-26a0-491e-8f32-ba54f6fcc244)
 
 *Figure 2: Demonstration of Excusely generating an excuse based on user input.*
-
----
-
-## 📂 Project Structure
-
-```
-Excusely-with-n8n-and-Firebase-AI-Studio/
-├── firebase-ai-studio/
-│   ├── public/
-│   ├── src/
-│   └── ...
-├── n8n-workflows/
-│   ├── excuse-generator.json
-│   └── ...
-├── assets/
-│   ├── workflow-diagram.png
-│   └── excusely-demo.gif
-├── README.md
-└── ...
-```
 
 ---
 
