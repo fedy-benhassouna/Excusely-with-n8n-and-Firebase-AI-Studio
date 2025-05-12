@@ -46,17 +46,47 @@ export async function generateExcuse(input: GenerateExcuseInput): Promise<Genera
       throw new Error(`API request failed: ${response.status} ${response.statusText}. Details: ${errorBody}`);
     }
 
-    // The API returns a JSON object like { "Excuse": "..." }
-    // We need to transform it to match GenerateExcuseOutputSchema which expects { "excuse": "..." }
-    const apiResponseData: any = await response.json();
+    // Handle successful response (2xx)
+    const responseText = await response.text();
+    if (!responseText) {
+        // API returned 2xx but with an empty body
+        console.error('API returned a successful status but with an empty response body.');
+        throw new Error('API returned an empty response.');
+    }
 
+    let apiResponseData: any;
+    try {
+        apiResponseData = JSON.parse(responseText);
+    } catch (parseError) {
+        console.error('Failed to parse API response as JSON. Raw response text:', responseText, 'Parse error:', parseError);
+        if (parseError instanceof SyntaxError) { // SyntaxError is the typical error for invalid JSON
+             throw new Error(`API response is not valid JSON. Details: ${parseError.message}. Response (first 100 chars): ${responseText.substring(0, 100)}...`);
+        }
+        // For other errors during parsing, if any.
+        throw new Error(`Failed to process API response. Response (first 100 chars): ${responseText.substring(0, 100)}...`);
+    }
+    
+
+    // The API might return { "Excuse": "..." } or { "excuse": "..." }
+    // We need to transform it to match GenerateExcuseOutputSchema which expects { "excuse": "..." }
     const transformedData = {
-      excuse: apiResponseData?.Excuse // Access 'Excuse' (capital E) from API response
+      excuse: apiResponseData?.Excuse || apiResponseData?.excuse
     };
 
+    // Validate against Zod schema
     const parsedOutput = GenerateExcuseOutputSchema.safeParse(transformedData);
     if (parsedOutput.success) {
-      return parsedOutput.data;
+      // Ensure excuse is not null or undefined, and is a non-empty string
+      if (parsedOutput.data.excuse && typeof parsedOutput.data.excuse === 'string' && parsedOutput.data.excuse.trim() !== '') {
+        return parsedOutput.data;
+      } else {
+        console.error(
+            'Transformed API response resulted in an empty or invalid excuse string.',
+            'Original API data:', apiResponseData,
+            'Transformed data for parsing:', transformedData
+        );
+        throw new Error('API returned an empty or invalid excuse.');
+      }
     } else {
       console.error(
         'Transformed API response did not match expected schema:', 
@@ -70,14 +100,23 @@ export async function generateExcuse(input: GenerateExcuseInput): Promise<Genera
     }
 
   } catch (error) {
-    console.error('Error calling excuse API or processing response:', error);
+    console.error('Error in generateExcuse function:', error);
     if (error instanceof Error) {
-      // Avoid double-wrapping if it's already a custom API error message
-      if (!error.message.startsWith('API request failed') && !error.message.startsWith('API response format is invalid')) {
-        throw new Error(`Failed to generate excuse: ${error.message}`);
+      // Avoid double-wrapping specific, informative error messages thrown above.
+      if (
+        error.message.startsWith('API request failed') ||
+        error.message.startsWith('API returned an empty response') ||
+        error.message.startsWith('API response is not valid JSON') ||
+        error.message.startsWith('Failed to process API response') ||
+        error.message.startsWith('API response format is invalid after transformation') ||
+        error.message.startsWith('API returned an empty or invalid excuse')
+      ) {
+        throw error; // Re-throw the specific error as is
       }
-      throw error; // Re-throw the specific error
+      // For other generic errors, wrap them
+      throw new Error(`Failed to generate excuse: ${error.message}`);
     }
+    // Fallback for non-Error objects thrown
     throw new Error('An unknown error occurred while generating excuse.');
   }
 }
