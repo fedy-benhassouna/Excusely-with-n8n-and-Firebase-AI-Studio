@@ -76,7 +76,7 @@
 
    * Import the `excuse-generator.json` workflow into your n8n instance.
    * Ensure that the webhook URL matches the endpoint expected by the Firebase front-end.
-   * Set up necessary credentials for the OpenAI API within n8n.
+   * Set up necessary credentials for the Gemini API within n8n.
 
 ---
 
