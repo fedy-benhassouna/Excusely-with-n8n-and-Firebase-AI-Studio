@@ -18,7 +18,6 @@
 
 * [Firebase AI Studio](https://firebase.google.com/products/ai-studio): For building the front-end interface.
 * [n8n](https://n8n.io/): For orchestrating backend workflows and integrating AI services.
-* [OpenAI API](https://openai.com/api/): To generate the content of the excuses.
 * [GitHub](https://github.com/): Version control and collaboration.
 
 ---
